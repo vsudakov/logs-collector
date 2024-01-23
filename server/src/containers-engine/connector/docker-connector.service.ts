@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Docker from 'dockerode';
 import { ConnectorService } from './connector.service';
-import { Container } from '../../collectors/entities/container.entity';
+
+import { Container } from '../../logs/entities/container.entity';
+import { SearchContainersDto } from '../../logs/dto/search-containers.dto';
 
 @Injectable()
 export class DockerConnectorService extends ConnectorService {
@@ -37,22 +39,11 @@ export class DockerConnectorService extends ConnectorService {
     );
   }
 
-  async searchContainers(id?: string, name?: string) {
-    let foundContainers: Docker.ContainerInfo[];
-
-    if (id) {
-      foundContainers = await this.docker.listContainers({
-        all: true,
-        filters: JSON.stringify({ id: [id] }),
-      });
-    } else if (name) {
-      foundContainers = await this.docker.listContainers({
-        all: true,
-        filters: JSON.stringify({ name: [name] }),
-      });
-    } else {
-      foundContainers = [];
-    }
+  async searchContainers(searchCriteria: SearchContainersDto) {
+    const foundContainers = await this.docker.listContainers({
+      all: true,
+      filters: JSON.stringify(searchCriteria),
+    });
 
     return foundContainers.map((c) => this.mapDockerContainer(c));
   }
@@ -62,21 +53,25 @@ export class DockerConnectorService extends ConnectorService {
       containerId: dockerContainer.Id,
       names: dockerContainer.Names,
       image: dockerContainer.Image,
-      state: dockerContainer.State,
     };
   }
 
   async getLogsStream(
     containerId: string,
     targetStream: NodeJS.WritableStream,
+    lastTimestamp?: string,
   ) {
     const container = this.docker.getContainer(containerId);
+
+    const timestamp = !!lastTimestamp && new Date(lastTimestamp).getTime();
+    const timeStampInSeconds = timestamp && Math.floor(timestamp / 1000);
 
     const logsStream = await container.logs({
       timestamps: true,
       follow: true,
       stdout: true,
       stderr: true,
+      ...(timeStampInSeconds && { since: timeStampInSeconds }),
     });
 
     container.modem.demuxStream(logsStream, targetStream, targetStream);

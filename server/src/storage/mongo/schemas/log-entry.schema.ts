@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 export const LogEntrySchema = new mongoose.Schema({
+  timestamp: String,
   text: String,
-  collector: { type: mongoose.Schema.Types.ObjectId, ref: 'Collector' },
+  container: { type: mongoose.Schema.Types.ObjectId, ref: 'Container' },
 });
