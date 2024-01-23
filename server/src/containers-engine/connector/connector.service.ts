@@ -11,9 +11,10 @@ export abstract class ConnectorService {
     searchDto: SearchContainersDto,
   ): Promise<Container[]>;
 
-  abstract getLogsStream(
+  abstract getLogs(
     containerId: string,
-    targetStream: NodeJS.WritableStream,
-    lastTimestamp?: string,
-  ): Promise<NodeJS.ReadableStream>;
+    sinceTimestamp?: string,
+  ): AsyncGenerator<{ timestamp: string; text: string }>;
+
+  abstract stop(containerId: string): void;
 }

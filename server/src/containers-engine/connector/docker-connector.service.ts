@@ -1,37 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as Docker from 'dockerode';
 import { ConnectorService } from './connector.service';
 
 import { Container } from '../../logs/entities/container.entity';
 import { SearchContainersDto } from '../../logs/dto/search-containers.dto';
+import * as readline from 'readline';
+import { DOCKER_SYMBOL } from './docker.module';
 
 @Injectable()
-export class DockerConnectorService extends ConnectorService {
+export class DockerConnectorService
+  extends ConnectorService
+  implements OnModuleDestroy
+{
   private readonly logger = new Logger(DockerConnectorService.name);
 
-  constructor(private configService: ConfigService) {
+  private abortControllers = new Map<string, AbortController>();
+
+  constructor(@Inject(DOCKER_SYMBOL) private readonly docker: Docker) {
     super();
   }
-
-  private readonly protocol = this.configService.get<string>(
-    'DOCKER_API_PROTOCOL',
-  );
-  private readonly host = this.configService.get<string>('DOCKER_API_HOST');
-  private readonly port = this.configService.get<string>('DOCKER_API_PORT');
-
-  private readonly socketPath = this.configService.get<string>(
-    'DOCKER_API_SOCKET_PATH',
-  );
-
-  private docker =
-    this.protocol && this.host && this.port
-      ? new Docker({
-          protocol: this.protocol as any,
-          host: this.host,
-          port: this.port,
-        })
-      : new Docker({ socketPath: this.socketPath });
 
   async getAllContainers() {
     return (await this.docker.listContainers({ all: true })).map((c) =>
@@ -56,17 +43,17 @@ export class DockerConnectorService extends ConnectorService {
     };
   }
 
-  async getLogsStream(
-    containerId: string,
-    targetStream: NodeJS.WritableStream,
-    lastTimestamp?: string,
-  ) {
+  async *getLogs(containerId: string, sinceTimestamp?: string) {
     const container = this.docker.getContainer(containerId);
 
-    const timestamp = !!lastTimestamp && new Date(lastTimestamp).getTime();
+    const timestamp = !!sinceTimestamp && new Date(sinceTimestamp).getTime();
     const timeStampInSeconds = timestamp && Math.floor(timestamp / 1000);
 
+    const controller = new AbortController();
+    this.abortControllers.set(containerId, controller);
+
     const logsStream = await container.logs({
+      abortSignal: controller.signal,
       timestamps: true,
       follow: true,
       stdout: true,
@@ -74,8 +61,30 @@ export class DockerConnectorService extends ConnectorService {
       ...(timeStampInSeconds && { since: timeStampInSeconds }),
     });
 
-    container.modem.demuxStream(logsStream, targetStream, targetStream);
+    const readliner = readline.createInterface(logsStream);
 
-    return logsStream;
+    for await (const line of readliner) {
+      const regex =
+        /(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s(?<text>.*)/;
+
+      const match = regex.exec(line);
+
+      if (match) {
+        const { timestamp, text } = match.groups!;
+        yield { timestamp, text };
+      }
+    }
+  }
+
+  stop(containerId: string) {
+    const controller = this.abortControllers.get(containerId);
+    controller?.abort();
+    this.abortControllers.delete(containerId);
+  }
+
+  onModuleDestroy() {
+    for (const controller of this.abortControllers.values()) {
+      controller.abort();
+    }
   }
 }

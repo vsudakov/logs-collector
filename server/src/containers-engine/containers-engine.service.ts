@@ -6,6 +6,6 @@ export class ContainersEngineService {
   constructor(private readonly connectorService: ConnectorService) {}
 
   async findAll() {
-    return await this.connectorService.getAllContainers();
+    return this.connectorService.getAllContainers();
   }
 }
