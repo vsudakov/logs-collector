@@ -1,17 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import { ContainersModule } from './containers/containers.module';
+import { ContainersEngineModule } from './containers-engine/containers-engine.module';
+import { CollectorsModule } from './collectors/collectors.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ContainersModule,
+    MongooseModule.forRoot(
+      `mongodb://${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/logs-collector`,
+    ),
+    ContainersEngineModule,
+    CollectorsModule,
+    StorageModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
