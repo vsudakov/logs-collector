@@ -11,7 +11,7 @@ export abstract class ConnectorService {
     searchDto: SearchContainersDto,
   ): Promise<Container[]>;
 
-  abstract getLogs(
+  abstract getLogsGenerator(
     containerId: string,
     sinceTimestamp?: string,
   ): AsyncGenerator<{ timestamp: string; text: string }>;

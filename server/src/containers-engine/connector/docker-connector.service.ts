@@ -43,7 +43,7 @@ export class DockerConnectorService
     };
   }
 
-  async *getLogs(containerId: string, sinceTimestamp?: string) {
+  async *getLogsGenerator(containerId: string, sinceTimestamp?: string) {
     const container = this.docker.getContainer(containerId);
 
     const timestamp = !!sinceTimestamp && new Date(sinceTimestamp).getTime();

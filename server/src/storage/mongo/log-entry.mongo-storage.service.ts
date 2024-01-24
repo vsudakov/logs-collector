@@ -18,15 +18,15 @@ export class LogEntryMongoStorageService implements LogEntryStorageService {
     return await doc.save();
   }
 
-  getAll() {
-    throw new Error('not implemented');
+  async getByContainer(containerId: string) {
+    return this.logEntryModel.find({ container: containerId }).sort({ _id: 1 });
   }
 
   async findLast(container: Container): Promise<LogEntry | null> {
     return this.logEntryModel.findOne({ container }).sort({ _id: -1 });
   }
 
-  removeAll(container: Container) {
-    throw new Error('not implemented');
+  async removeAll(container: Container) {
+    await this.logEntryModel.deleteMany({ container });
   }
 }

@@ -4,9 +4,9 @@ import { Container } from '../logs/entities/container.entity';
 export abstract class LogEntryStorageService {
   abstract save(logEntry: LogEntry): Promise<any>;
 
-  abstract getAll(): void;
+  abstract getByContainer(containerId: string): Promise<LogEntry[]>;
 
   abstract findLast(container: Container): Promise<LogEntry | null>;
 
-  abstract removeAll(container: Container): void;
+  abstract removeAll(container: Container): Promise<void>;
 }
