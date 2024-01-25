@@ -38,7 +38,7 @@ When recovering a job - it reads the logs starting from the place (timestamp) wh
 
 ### configuration
 
-- review and adjust environmental variables in [.env](./.env)
+- review and adjust environmental variables in [.env](./server/.env)
 
 ### running
 
