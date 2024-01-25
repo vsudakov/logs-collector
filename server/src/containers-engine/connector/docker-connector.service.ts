@@ -1,23 +1,28 @@
-import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import * as Docker from 'dockerode';
 import { ConnectorService } from './connector.service';
-
 import { Container } from '../../logs/entities/container.entity';
 import { SearchContainersDto } from '../../logs/dto/search-containers.dto';
 import * as readline from 'readline';
 import { DOCKER_SYMBOL } from './docker.module';
+import { LoggerService } from '../../logger/logger.service';
 
 @Injectable()
 export class DockerConnectorService
   extends ConnectorService
   implements OnModuleDestroy
 {
-  private readonly logger = new Logger(DockerConnectorService.name);
+  private readonly logger;
 
   private abortControllers = new Map<string, AbortController>();
 
-  constructor(@Inject(DOCKER_SYMBOL) private readonly docker: Docker) {
+  constructor(
+    loggerService: LoggerService,
+    @Inject(DOCKER_SYMBOL) private readonly docker: Docker,
+  ) {
     super();
+
+    this.logger = loggerService.getLogger(DockerConnectorService.name);
   }
 
   async getAllContainers() {

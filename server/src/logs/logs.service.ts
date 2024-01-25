@@ -1,20 +1,24 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConnectorService } from '../containers-engine/connector/connector.service';
 import { ContainerStorageService } from '../storage/container.storage.service';
 import { LogEntryStorageService } from '../storage/log-entry.storage.service';
 import { State } from './entities/job.entity';
 import { Container } from './entities/container.entity';
 import { SearchContainersDto } from './dto/search-containers.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class LogsService implements OnModuleInit {
-  private readonly logger = new Logger(LogsService.name);
+  private readonly logger;
 
   constructor(
+    loggerService: LoggerService,
     private readonly connectorService: ConnectorService,
     private readonly containerStorageService: ContainerStorageService,
     private readonly logEntryStorageService: LogEntryStorageService,
-  ) {}
+  ) {
+    this.logger = loggerService.getLogger(LogsService.name);
+  }
 
   searchExternalContainers(searchCriteria: SearchContainersDto) {
     return this.connectorService.searchContainers(searchCriteria);

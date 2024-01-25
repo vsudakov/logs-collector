@@ -4,6 +4,7 @@ import { ContainersEngineModule } from './containers-engine/containers-engine.mo
 import { LogsModule } from './logs/logs.module';
 import { StorageModule } from './storage/storage.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MongooseModule } from '@nestjs/mongoose';
       `mongodb://${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/logs-collector`,
     ),
 
+    LoggerModule,
     ContainersEngineModule,
     LogsModule,
     StorageModule,
